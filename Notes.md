@@ -1,5 +1,6 @@
 ## Delete a node by name
 
+https://github.com/neo4j/neo4j-documentation/blob/4.4/embedded-examples/src/main/java/org/neo4j/examples/socnet/Person.java
 https://www.hascode.com/2016/07/object-graph-mapping-by-example-with-neo4j-ogm-and-java/
 
 ```shell
