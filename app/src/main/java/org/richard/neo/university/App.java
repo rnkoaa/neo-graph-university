@@ -3,7 +3,6 @@
  */
 package org.richard.neo.university;
 
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.neo4j.ogm.config.Configuration;
@@ -15,17 +14,18 @@ public class App {
     Session session;
     DepartmentServiceImpl departmentService;
     SchoolServiceImpl schoolService;
+    final SubjectServiceImpl subjectService;
     TeacherServiceImpl teacherService;
 
     public App() {
         Configuration configuration = new Configuration.Builder()
             .uri("bolt://localhost")
-            .credentials("neo4j", "xxxxxxxxxxx")
+            .credentials("neo4j", "xxxxx")
             .build();
 
         SessionFactory sessionFactory = new SessionFactory(configuration, "org.richard.neo.university");
         this.session = sessionFactory.openSession();
-        ;
+        this.subjectService = new SubjectServiceImpl(this.session);
         departmentService = new DepartmentServiceImpl(this.session);
         schoolService = new SchoolServiceImpl(this.session);
         teacherService = new TeacherServiceImpl(this.session);
@@ -89,54 +89,67 @@ public class App {
                     new Subject("Mechanical Engineering")
                 ))
             );
-            presavedSchool.setTeachers(teachers);
 
-            presavedSchool.setDepartments(Set.of(
-                new Department("Mathematics", Set.of(
-                    new Subject("Pure Mathematics", Set.of(
-                        new Teacher("Mr. Flint"),
-                        new Teacher("Mr. Marker"),
-                        new Teacher("Mr. Van der Graaf")
-                    )),
-                    new Subject("Applied Mathematics", Set.of(
-                        new Teacher("Mrs. Glass"),
-                        new Teacher("Ms. Packard-Bell"),
-                        new Teacher("Mr. Van der Graaf")
-                    ))
-                )),
-                new Department("Science", Set.of(
-                    new Subject("Physics", Set.of(
-                        new Teacher("Mr. Balls"),
-                        new Teacher("Mr. Kearney")
-                    )),
-                    new Subject("Chemistry", Set.of(
-                        new Teacher("Mr. Kearney"),
-                        new Teacher("Mrs. Noakes")
-                    )),
-                    new Subject("Earth Science", Set.of(
-                        new Teacher("Ms. Noethe")
-                    ))
-                )),
-                new Department("Engineering", Set.of(
-                    new Subject("Mechanical Engineering", Set.of(
-                        new Teacher("Mr. Jameson")
-                    )),
-                    new Subject("Systems Engineering", Set.of(
-                        new Teacher("Mr. Smith")
-                    )),
-                    new Subject("Chemical Engineering", Set.of(
-                        new Teacher("Mrs. Adenough")
-                    )),
-                    new Subject("Civil Engineering", Set.of(
-                        new Teacher("Ms. Delgado")
-                    )),
-                    new Subject("Electrical Engineering", Set.of(
-                        new Teacher("Mrs. Fischer")
-                    ))
-                ))
+            // lets save all subjects
 
-            ));
-            var school = app.findOrCreateSchool(presavedSchool);
+            Set<Subject> modifiableSubjects = teachers.stream()
+                .flatMap(teacher -> teacher.getSubjects().stream())
+                .collect(Collectors.toSet());
+            modifiableSubjects.addAll(subjects);
+
+            var savedSubjects = modifiableSubjects.stream()
+                .map(app.subjectService::createOrUpdate)
+                .collect(Collectors.toSet());
+            System.out.println("Saved " + savedSubjects.size() + " subjects");
+//
+//            presavedSchool.setTeachers(teachers);
+//
+//            presavedSchool.setDepartments(Set.of(
+//                new Department("Mathematics", Set.of(
+//                    new Subject("Pure Mathematics", Set.of(
+//                        new Teacher("Mr. Flint"),
+//                        new Teacher("Mr. Marker"),
+//                        new Teacher("Mr. Van der Graaf")
+//                    )),
+//                    new Subject("Applied Mathematics", Set.of(
+//                        new Teacher("Mrs. Glass"),
+//                        new Teacher("Ms. Packard-Bell"),
+//                        new Teacher("Mr. Van der Graaf")
+//                    ))
+//                )),
+//                new Department("Science", Set.of(
+//                    new Subject("Physics", Set.of(
+//                        new Teacher("Mr. Balls"),
+//                        new Teacher("Mr. Kearney")
+//                    )),
+//                    new Subject("Chemistry", Set.of(
+//                        new Teacher("Mr. Kearney"),
+//                        new Teacher("Mrs. Noakes")
+//                    )),
+//                    new Subject("Earth Science", Set.of(
+//                        new Teacher("Ms. Noethe")
+//                    ))
+//                )),
+//                new Department("Engineering", Set.of(
+//                    new Subject("Mechanical Engineering", Set.of(
+//                        new Teacher("Mr. Jameson")
+//                    )),
+//                    new Subject("Systems Engineering", Set.of(
+//                        new Teacher("Mr. Smith")
+//                    )),
+//                    new Subject("Chemical Engineering", Set.of(
+//                        new Teacher("Mrs. Adenough")
+//                    )),
+//                    new Subject("Civil Engineering", Set.of(
+//                        new Teacher("Ms. Delgado")
+//                    )),
+//                    new Subject("Electrical Engineering", Set.of(
+//                        new Teacher("Mrs. Fischer")
+//                    ))
+//                ))
+//
+//            ));
+//            var school = app.findOrCreateSchool(presavedSchool);
 
 //            app.createTeacher(school, new Teacher("Mr. Balls"));
 //            app.createTeacher(school, new Teacher("Ms. Packard-Bell"));
