@@ -3,6 +3,7 @@
  */
 package org.richard.neo.university;
 
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.neo4j.ogm.config.Configuration;
@@ -99,8 +100,14 @@ public class App {
 
             var savedSubjects = modifiableSubjects.stream()
                 .map(app.subjectService::createOrUpdate)
-                .collect(Collectors.toSet());
-            System.out.println("Saved " + savedSubjects.size() + " subjects");
+                .collect(Collectors.toMap(Subject::getName, s -> s));
+
+            teachers.stream()
+                .map(teacher -> {
+                    Set<Subject> teacherSubjects = teacher.getSubjects();
+                    return teacher;
+                });
+
 //
 //            presavedSchool.setTeachers(teachers);
 //
