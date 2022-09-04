@@ -25,6 +25,9 @@ docker run -itd \
 
 ```lua
 -- https://neo4j.com/docs/cypher-manual/current/clauses/delete/
+MATCH (n) 
+DETACH DELETE n
+---
 MATCH (n:Department {name: 'Chemistry'})
 DELETE n
 ```

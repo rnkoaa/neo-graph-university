@@ -3,9 +3,10 @@
  */
 package org.richard.neo.university;
 
-import java.util.Map;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.neo4j.ogm.config.Configuration;
 import org.neo4j.ogm.session.Session;
 import org.neo4j.ogm.session.SessionFactory;
@@ -21,7 +22,7 @@ public class App {
     public App() {
         Configuration configuration = new Configuration.Builder()
             .uri("bolt://localhost")
-            .credentials("neo4j", "xxxxx")
+            .credentials("neo4j", "xxxxxxxxxx")
             .build();
 
         SessionFactory sessionFactory = new SessionFactory(configuration, "org.richard.neo.university");
@@ -64,7 +65,8 @@ public class App {
                     new Subject("Earth Science")
                 )),
                 new Teacher("Mrs. Noakes", Set.of(
-                    new Subject("Biology")
+                    new Subject("Biology"),
+                    new Subject("Chemistry")
                 )),
                 new Teacher("Mr. Marker", Set.of(
                     new Subject("Pure Mathematics")
@@ -79,7 +81,8 @@ public class App {
                     new Subject("Pure Mathematics")
                 )),
                 new Teacher("Mr. Kearney", Set.of(
-                    new Subject("Physics")
+                    new Subject("Physics"),
+                    new Subject("Chemistry")
                 )),
                 new Teacher("Mrs. Forrester"),
                 new Teacher("Mrs. Fischer", Set.of(
@@ -91,8 +94,6 @@ public class App {
                 ))
             );
 
-            // lets save all subjects
-
             Set<Subject> modifiableSubjects = teachers.stream()
                 .flatMap(teacher -> teacher.getSubjects().stream())
                 .collect(Collectors.toSet());
@@ -102,97 +103,46 @@ public class App {
                 .map(app.subjectService::createOrUpdate)
                 .collect(Collectors.toMap(Subject::getName, s -> s));
 
-            teachers.stream()
-                .map(teacher -> {
+            Set<Teacher> teachersWithSubjects = teachers.stream()
+                .peek(teacher -> {
                     Set<Subject> teacherSubjects = teacher.getSubjects();
-                    return teacher;
-                });
+                    var mappedSubjects = teacherSubjects.stream()
+                        .map(teacherSubject -> savedSubjects.getOrDefault(teacherSubject.getName(), teacherSubject))
+                        .collect(Collectors.toSet());
+                    teacher.setSubjects(mappedSubjects);
+                })
+                .collect(Collectors.toSet());
 
-//
-//            presavedSchool.setTeachers(teachers);
-//
-//            presavedSchool.setDepartments(Set.of(
-//                new Department("Mathematics", Set.of(
-//                    new Subject("Pure Mathematics", Set.of(
-//                        new Teacher("Mr. Flint"),
-//                        new Teacher("Mr. Marker"),
-//                        new Teacher("Mr. Van der Graaf")
-//                    )),
-//                    new Subject("Applied Mathematics", Set.of(
-//                        new Teacher("Mrs. Glass"),
-//                        new Teacher("Ms. Packard-Bell"),
-//                        new Teacher("Mr. Van der Graaf")
-//                    ))
-//                )),
-//                new Department("Science", Set.of(
-//                    new Subject("Physics", Set.of(
-//                        new Teacher("Mr. Balls"),
-//                        new Teacher("Mr. Kearney")
-//                    )),
-//                    new Subject("Chemistry", Set.of(
-//                        new Teacher("Mr. Kearney"),
-//                        new Teacher("Mrs. Noakes")
-//                    )),
-//                    new Subject("Earth Science", Set.of(
-//                        new Teacher("Ms. Noethe")
-//                    ))
-//                )),
-//                new Department("Engineering", Set.of(
-//                    new Subject("Mechanical Engineering", Set.of(
-//                        new Teacher("Mr. Jameson")
-//                    )),
-//                    new Subject("Systems Engineering", Set.of(
-//                        new Teacher("Mr. Smith")
-//                    )),
-//                    new Subject("Chemical Engineering", Set.of(
-//                        new Teacher("Mrs. Adenough")
-//                    )),
-//                    new Subject("Civil Engineering", Set.of(
-//                        new Teacher("Ms. Delgado")
-//                    )),
-//                    new Subject("Electrical Engineering", Set.of(
-//                        new Teacher("Mrs. Fischer")
-//                    ))
-//                ))
-//
-//            ));
-//            var school = app.findOrCreateSchool(presavedSchool);
+            var savedTeachers = teachersWithSubjects.stream()
+                .map(app.teacherService::createOrUpdate)
+                .collect(Collectors.toMap(Teacher::getName, s -> s));
 
-//            app.createTeacher(school, new Teacher("Mr. Balls"));
-//            app.createTeacher(school, new Teacher("Ms. Packard-Bell"));
-//            app.createTeacher(school, new Teacher("Mr. Smith"));
-//            app.createTeacher(school, new Teacher("Mrs. Adenough"));
-//            app.createTeacher(school, new Teacher("Mr Van der Graaf"));
-//            app.createTeacher(school, new Teacher("Ms Noethe"));
-//            app.createTeacher(school, new Teacher("Mrs Noakes"));
-//            app.createTeacher(school, new Teacher("Mr Marker"));
-//            app.createTeacher(school, new Teacher("Ms Delgado"));
-//            app.createTeacher(school, new Teacher("Mrs Glass"));
-//            app.createTeacher(school, new Teacher("Mr Flint"));
-//            app.createTeacher(school, new Teacher("Mr Kearney"));
-//            app.createTeacher(school, new Teacher("Mrs Forrester"));
-//            app.createTeacher(school, new Teacher("Mrs Fischer"));
-//            app.createTeacher(school, new Teacher("Mr Jameson"));
-
-//            app.schoolService.createOrUpdate();
-//            var department = new Department("Chemistry");
-//
-//            Subject subject = new Subject("Computer Science", department);
-//            department.addSubject(subject);
-//            var subject2 = new Subject("Physical Chemistry", department);
-//            department.addSubject(subject2);
-//            Department saved = departmentService.createOrUpdate(department);
-//            System.out.println(saved);
-//
-//            Optional<Department> chemistry = departmentService.findByName("Chemistry");
-//            assert chemistry.isPresent();
-//
-//            Department department1 = chemistry.get();
-//            System.out.println(department1);
+            Set<Department> departments = Stream.of(
+                    new Department("Mathematics", Set.of(
+                        savedSubjects.getOrDefault("Applied Mathematics", new Subject("Applied Mathematics")),
+                        savedSubjects.getOrDefault("Pure Mathematics", new Subject("Pure Mathematics"))
+                    )),
+                    new Department("Science", Set.of(
+                        savedSubjects.getOrDefault("Physics", new Subject("Physics")),
+                        savedSubjects.getOrDefault("Chemistry", new Subject("Chemistry")),
+                        savedSubjects.getOrDefault("Earth Science", new Subject("Earth Science"))
+                    )),
+                    new Department("Engineering", Set.of(
+                        savedSubjects.getOrDefault("Mechanical Engineering", new Subject("Mechanical Engineering")),
+                        savedSubjects.getOrDefault("Systems Engineering", new Subject("Systems Engineering")),
+                        savedSubjects.getOrDefault("Chemical Engineering", new Subject("Chemical Engineering")),
+                        savedSubjects.getOrDefault("Civil Engineering", new Subject("Civil Engineering")),
+                        savedSubjects.getOrDefault("Electrical Engineering", new Subject("Electrical Engineering"))
+                    ))
+                )
+                .map(department -> app.departmentService.createOrUpdate(department))
+                .collect(Collectors.toSet());
+            presavedSchool.setTeachers(new HashSet<>(savedTeachers.values()));
+            presavedSchool.setDepartments(departments);
+            presavedSchool.setHeadTeacher(new Teacher("Mr Jameson"));
+            app.schoolService.createOrUpdate(presavedSchool);
             tx.commit();
         }
-
-//        System.out.println(new App().getGreeting());
     }
 
     School findOrCreateSchool(School school) {
